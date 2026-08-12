@@ -9,37 +9,51 @@ const io = new Server(server, {
     origin: "*",
   },
 });
-const chatHistory = [];
-
 
 
 io.on("connection", (socket) => {
+
+const chatHistory = [];
+
   console.log("A user connected");
 
-
-  socket.on("disconnect", () => {
-    console.log("A user disconnected");
-  });
-
   socket.on("ai-message", async (data) => {
-    console.log("Received message from client:", data);
+    console.log("Received message:", data);
 
     chatHistory.push({
-      role: "user",
-      parts: [{text: data}],
+      type: "user_input",
+      content: [
+        {
+          type: "text",
+          text: data,
+        },
+      ],
     });
 
-    const response = await generateText(data);
+    const response = await generateText(chatHistory);
+
     console.log("AI response:", response);
+    // console.log(JSON.stringify(response, null, 2));
 
     chatHistory.push({
-      role: "model",
-      larts: [{text: response}],
+      type: "model_output",
+      content: [
+        {
+          type: "text",
+          text: response,
+        },
+      ],
     });
 
     socket.emit("ai-response", response);
   });
-});
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected");
+  });
+});;
+
+
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -48,6 +62,3 @@ app.get("/", (req, res) => {
 server.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
-
-
-module.exports = { app, server, io, chatHistory };
